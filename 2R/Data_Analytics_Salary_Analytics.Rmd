@@ -1,0 +1,883 @@
+---
+title: "10_Minutes_Project_LX"
+author: "Lei_Xue"
+date: "2022-12-02"
+output: html_document
+---
+
+# What impacts on Data Scientist Salary ?
+
+## 1. Data Cleaning
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(fastDummies)
+library(GGally)
+library(ggplot2)
+library(rpart)
+library(rpart.plot)
+library(patchwork)
+library(VIM)
+library(mice)
+library(usethis)
+library(topicmodels)
+#install.packages("devtools")
+library(gutenbergr)
+library(devtools)
+library(tidyverse)      # data manipulation & plotting
+library(stringr)        # text cleaning and regular expressions
+library(tidytext)       # provides additional text mining functions
+library(harrypotter)  
+library(corrplot)
+library(caret)
+library(stringr)
+```
+
+```{r}
+# To shorten the running time
+library(doParallel)
+registerDoParallel(cores=8)
+```
+
+### 1.1 Data overview
+
+```{r}
+salary = read.csv("BusinessAnalystSalary.csv", stringsAsFactors= TRUE)
+#head(salary$Salary.Estimate)
+#colnames(salary)
+```
+
+### 1.2 Data Cleaning
+
+#### 1.2.1 Handling Job Description
+
+-   I want to get more information from Job Description Part including education requirements and year of experience requirements
+
+```{r}
+#fix job description columns
+salary$Job.Description <- gsub('�','',salary$Job.Description)
+salary$Job.Description <- gsub('[\t\n]','',salary$Job.Description)
+salary$Job.Description <- tolower(salary$Job.Description)
+```
+
+-   Get education information from Job description
+
+```{r}
+salary1 <- salary
+salary1$education <- "Unknown"
+salary1$education <- ifelse(grepl("phd", salary$Job.Description), "graduate",salary1$education)
+salary1$education <- ifelse(grepl("master", salary$Job.Description), "graduate",salary1$education)
+salary1$education <- ifelse(grepl("graduate", salary$Job.Description),"graduate",salary1$education)
+salary1$education <- ifelse(grepl("bachelor", salary$Job.Description), "bachelor",salary1$education)
+salary1$education <- ifelse(grepl("college", salary$Job.Description), "bachelor",salary1$education)
+salary1$education <- ifelse(grepl("high school", salary$Job.Description), "high school", salary1$education)
+sum(salary1$education == "Unknown")
+
+```
+
+-   Remove Job Description Column, and I will do Text Mining for it in Part5
+
+```{r}
+salary1$Job.Description <- NULL
+```
+
+#### 1.2.2 Missing Data
+
+-   This data has been re-coded NA to -1. I should change it back to handling the missing data
+
+```{r}
+salary1[salary1 == "-1"] <- NA 
+salary1$Founded = as.integer(salary1$Founded)
+```
+
+```{r}
+#colnames(salary1) 
+```
+
+-   Here is the number of missing data.
+
+```{r}
+sum(is.na(salary1$Founded))
+sum(is.na(salary1))
+nrow(salary1)
+```
+
+#### 1.2.2 Visualization of Missing Data
+
+-   I did the visualization of Missing data to see: should I drop all NA data or drop some column?
+
+-   It easily to see that last two columns: `Competitors` `Easy.Apply` are losing the most of information. If I need drop columns, they will be the best choice.
+
+```{r}
+md.pattern(salary1)
+aggr(salary1, prop=FALSE, numbers=TRUE)
+matrixplot(salary1)
+```
+
+#### 1.2.3 Method Comparison
+
+-   I compared the percent loss of data. If I dropped all NA data, 98% of data information will be missing.
+
+-   If I dropped two columns and remove rows with NA data, only 27% of data will be missing. Thus it is a good idea to choose the second method to deal with missing data.
+
+```{r}
+salary_no_missing <- na.omit(salary1)
+PercentLossOfData <- (nrow(salary1) - nrow(salary_no_missing))*100/nrow(salary1)
+PercentLossOfData
+```
+
+```{r}
+salary_witout_most_missing <- salary1 # Create a copy
+salary_witout_most_missing$Easy.Apply <- NULL # Remove NonD variable.
+salary_witout_most_missing$Competitors <- NULL # Remove Dream variable.
+salary_witout_most_missing <- na.omit(salary_witout_most_missing)
+PercentLossOfData <- (nrow(salary1) - nrow(salary_witout_most_missing))*100/nrow(salary1)
+PercentLossOfData
+```
+
+### 1.3 Data Re-code
+
+-   Since the data are very dirty. I need to re-code my data for better analysis.
+
+#### 1.3.1 Salary Re-code
+
+-   Salary here are a range. I separated it to low salary and high salary. I calculated the mean of low salary and high salary as my average salary data.
+
+-   Salary were in character type, I converted it to numeric type.
+
+```{r}
+salary2 <- salary_witout_most_missing
+salary2<- separate(salary2, col=Salary.Estimate, into=c('Low_Salary','High_Salary' ), sep='-')
+salary3<- separate(salary2, col=High_Salary, into=c('High_Salary','String' ), sep=' ')
+salary3$String <- NULL
+```
+
+```{r}
+library(tidyverse)
+salary3$High_Salary<-gsub("K","",as.character(salary3$High_Salary))
+salary3$High_Salary<-gsub("\\$","",as.character(salary3$High_Salary))
+salary3$Low_Salary<-gsub("K","",as.character(salary3$Low_Salary))
+salary3$Low_Salary<-gsub("\\$","",as.character(salary3$Low_Salary))
+salary3$AvgSalary <- ((as.numeric(salary3$High_Salary) + as.numeric(salary3$Low_Salary))/2)
+#head(salary3)
+salary3$Low_Salary <- NULL
+salary3$High_Salary <- NULL
+```
+
+#### 1.3.2 Company and Rating Re-code
+
+-   Since the company name are combined with rating, I separated it.
+
+```{r}
+summary(salary$Rating)
+salary4<- separate(salary3, col=Company.Name, into=c('Company','Star' ), sep='\n')
+summary(as.numeric(salary4$Star))
+salary4$Rating <- NULL # Since Rating has negative values, I choose Star as my analysis part
+```
+
+#### 1.3.3 Location Re-code
+
+-   Location are combined with City and state. To support my analysis better, I split it into city and state.
+
+```{r}
+salary5<- separate(salary4, col=Location, into=c('City','state' ), sep=",")
+```
+
+#### 1.3.4 Founded Year Re-code
+
+```{r}
+# Want to Recode the founded year as number of years history
+salary5$Founded <- (2022 - salary5$Founded)
+```
+
+## 2. Factors Analytics and Visulzaition
+
+### 2.1 Salary and Company Rating
+
+-   As an employee, the most important thing are salary and company rating(which is related to working environment). Thus, I choose two variables to be my core analytics points.
+
+#### 2.1.1 Salary and Rating distribution
+
+-   First, I looked into the salary and rating distribution:
+
+-   Most average salary are distributed in range from 50K to 100K ,and the mean of average salary is 76.16K.
+
+-   Most companies rating are centralized in 3-4 stars, and the mean of rating is 3.74.
+
+```{r}
+Salary <- salary5
+ggplot(data = Salary) + geom_histogram(mapping = aes(x = AvgSalary),color="white", fill="cornflowerblue")
+Salary$Star <- as.numeric(Salary$Star)
+ggplot(data = Salary) + geom_histogram(mapping = aes(x = Star),color="white", fill="pink")
+```
+
+```{r}
+mean(Salary$AvgSalary)
+```
+
+```{r}
+mean.default(Salary$Star,na.rm=TRUE)
+```
+
+#### 2.1.2 Salary related with company rating
+
+-   When looked into the relationship between salary and rating, it is interesting to found that salary does not always have a positive relationship with rating.
+
+-   However, when just focused on the rating between (2.5-4.5), it displays a positive connection: higher the salary, and higher the company rating
+
+```{r}
+Salary$Star <- as.numeric(Salary$Star)
+Salary9<-Salary %>% group_by(Star) %>% summarise_if(is.numeric, mean, na.rm=TRUE)
+Salary9$count <- (Salary %>% count(Star))$n
+Salary9<- Salary9 %>% filter(count >= 30)
+ggplot(data = Salary9, aes(x = Star, y = AvgSalary,group=1)) +geom_line(size = 1)+geom_point(color="black",size =2)
+
+```
+
+### 2.2 Salary and Location Analytics
+
+#### 2.2.1 State and Salary
+
+-   It is well acknowledged that location has a significant impact on work pay. The bubble image suggests that there are more work opportunities when the bubble is larger.
+
+-   In NY, CA, and TX, we may have more employment opportunities. However, CA, AZ, and WA offer better salaries for jobs. CA must be the best option if only one location is needed for job searching.
+
+```{r}
+salary6 <- Salary %>%group_by(state) %>%summarise_if(is.numeric, mean, na.rm=TRUE)
+salary6$count <- (Salary %>% count(state))$n
+#head(salary6)
+salary6 %>% ggplot(aes(x=state, y=AvgSalary, size = count)) +geom_point(alpha=0.5,color="coral3") +scale_size(range = c(.01, 18), name="Job Market")+theme(axis.text.x = element_text(angle=90))
+```
+
+#### 2.2.2 City and Salary
+
+-   I removed the jobs with a rate of less than 5 to improve the study when we looked at the state of California. It demonstrates that San Francisco, San Jose, and Santa Clara have greater salaries.
+
+```{r warning=FALSE}
+salary7<- Salary %>% filter(state == " CA")
+
+salary8 <- salary7 %>%group_by(City) %>%summarise_if(is.numeric, mean, na.rm=TRUE)
+salary8$count <- (salary7 %>% count(City))$n
+# only choose city where the job chances >=5 
+salary8<- salary8 %>% filter(count >= 5)
+salary8<- salary8[order(salary8$AvgSalary), ]
+salary8$City <- paste(salary8$City,round(salary8$AvgSalary, digits=2))
+empty_bar <- 11
+ 
+# Add lines to the initial dataset
+to_add <- matrix(NA, empty_bar, ncol(salary8))
+colnames(to_add) <- colnames(salary8)
+salary8 <- rbind(salary8, to_add)
+salary8$id <- seq(1, nrow(salary8))
+ 
+# Get the name and the y position of each label
+label_data <- salary8
+number_of_bar <- nrow(label_data)
+angle <- 90 - 360 * (label_data$id-0.5) /number_of_bar     # I substract 0.5 because the letter must have the angle of the center of the bars. Not extreme right(1) or extreme left (0)
+label_data$hjust <- ifelse( angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+ 
+# Make the plot
+p <- ggplot(salary8, aes(x=as.factor(id), y=AvgSalary)) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
+  geom_bar(stat="identity", fill=alpha("chocolate", 0.2)) +
+  ylim(-100,120) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar(start = 0) + 
+  geom_text(data=label_data, aes(x=id, y=AvgSalary-30, label=City, hjust=hjust), color="black", fontface="bold",alpha=0.5, size=1.5, angle= label_data$angle, inherit.aes = FALSE ) 
+ 
+p
+
+```
+
+### 2.3 Salary and Company Size Analytics
+
+#### 2.3.1 Company Size with Salary
+
+```{r}
+unique(Salary$Size)
+```
+
+-   There is no significant correlation between company size and salary. Given this, the average wage does not differ significantly depending on the size of the organization.
+
+```{r}
+salary10 <- Salary %>% filter(Size != "Unknown")
+salary10$Size <-gsub("employees","",as.character(salary10$Size))
+means <- aggregate(AvgSalary ~  Size, salary10, mean)
+means$AvgSalary <- round(means$AvgSalary, digits=2)
+salary10 %>% mutate(class = fct_reorder(Size, AvgSalary,.fun='mean')) %>%ggplot(aes(x = Size, y = AvgSalary, fill = Size)) + geom_boxplot() +theme(legend.position="none")+  stat_summary(fun=mean, colour="darkred", geom="point", shape=18, size=3, show.legend=FALSE) + geom_text(data = means, aes(label = AvgSalary, y = AvgSalary))
+```
+
+### 2.4 Founded year Analytics
+
+#### 2.4.1 Founded year and Salary
+
+-   When looked into founded year. most companies are founded after 2000.
+
+```{r}
+par(mfcol = c(2, 2))
+Salary$Founded <- as.numeric(Salary$Founded)
+ggplot(data = Salary) + geom_point(mapping = aes(y = AvgSalary, x = Founded),color= "darksalmon") +labs(x = "years", y = "AvgSalary")
+```
+
+### 2.5 Sector Analytics
+
+#### 2.5.1 Sector with Salary and Rating
+
+-   The majority of data scientist jobs are in the business services and IT sectors.
+
+```{r}
+ggplot(data = Salary) + geom_point(mapping = aes(x = AvgSalary, y = Star, alpha = 0.5), color = "#F3C2AF") + facet_wrap(~ Sector)
+```
+
+#### 2.5.2 Sector with Salary
+
+-   The biotech sector has greater salaries than other sectors when the relationship between salary and sector is examined.
+
+```{r}
+library(ggridges)
+ggplot(Salary, aes(x = AvgSalary, y = Sector, fill = Sector)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+```
+
+### 2.6 Salary and Type.of.ownership
+
+```{r}
+ggplot(data = Salary, mapping = aes(x = Type.of.ownership, y = AvgSalary)) + geom_boxplot(color= "#A08887") + coord_flip()+theme(legend.position="none") +
+    scale_fill_brewer("Blues")
+```
+
+```{r}
+ggplot(data = Salary, mapping = aes(x = Type.of.ownership, y = Star)) + geom_boxplot(color= "#A08887") + coord_flip()+theme(legend.position="none") +
+    scale_fill_brewer("Blues")
+```
+
+### 2.7 Education Analytics
+
+```{r}
+
+salary11 <- Salary %>%group_by(education) %>%summarise_if(is.numeric, mean, na.rm=TRUE)
+salary11$count <- (Salary %>% count(education))$n
+salary11 <- salary11[-4,]
+
+#head(salary11)
+par(mfcol = c(1, 3))
+p1 <- barplot(height =salary11$AvgSalary, names = salary11$education, xlab="Education", ylab="AvgSalary", main="Eudcation and AvgSalary", col="#DCDDD5")
+text(p1, 0, round(salary11$AvgSalary, 2),cex=1,pos=3) 
+
+p2 <- barplot(height =salary11$Founded, names = salary11$education, xlab="Education", ylab="founded year", main="Eudcation and Founded", col=rgb(0.2,0.4,0.6,0.6))
+text(p2, 0, round(salary11$Founded, 2),cex=1,pos=3)
+
+p3 <- barplot(height =salary11$Star, names = salary11$education, xlab="Education", ylab="Rating", main="Eudcation and Rating", col="#DFBFB2")
+text(p3, 0, round(salary11$Star, 2),cex=1,pos=3) 
+
+```
+
+## 3. Regression Model Building
+
+```{r}
+dummy_df <-dummy_cols(Salary, select_columns=c('Sector','Size','state','Type.of.ownership',"eduction"), remove_selected_columns = TRUE)
+#colnames(dummy_df)
+```
+
+```{r}
+#summary(df)
+#remove zeros of columns
+dummy_df_cal <- dummy_df[,c(11:69)]
+ifelse(colSums(dummy_df_cal) > 5, colSums(dummy_df_cal), NA)
+```
+
+```{r}
+drop <- c("Size_-1","Sector_-1","Type.of.ownership_-1","Type.of.ownership_Self-employed","Type.of.ownership_Franchise","Sector_Mining & Metals","Job.Title","Low_Salary","High_Salary","Revenue","Company","Headquarters","Industry","City","Size_Unknown","Unknown","education_Unknown","Sector_Agriculture & Forestry","education")
+df = dummy_df[,!(names(dummy_df) %in% drop)]
+#colnames(df)
+```
+
+```{r}
+names(df) <- gsub('Type.of.ownership_','',names(df))
+names(df) <- gsub('state_ ','',names(df))
+names(df) <- gsub('_','',names(df))
+names(df) <- gsub('/','',names(df))
+names(df) <- gsub('&','',names(df))
+names(df) <- gsub(',','',names(df))
+names(df) <- gsub(' ','',names(df))
+names(df) <- gsub('-','',names(df))
+colnames(df)[28] <- "SizeOver10000employees"
+#colnames(df)
+```
+
+```{r}
+#remove high corelated variables
+
+drop = findCorrelation(abs(cor(df)), cutoff = .5) 
+drop = names(df)[drop]
+drop
+```
+
+```{r}
+df =df %>%subset(select=-c(CompanyPrivate, CompanyPublic ,Government, SectorEducation, SectorNonProfit))
+```
+
+```{r}
+corrplot(cor(df), tl.cex = 0.3)
+```
+
+-   Split the model to train and test dataset
+
+```{r}
+set.seed(123, sample.kind = "Rejection")
+spl = sample(nrow(df),0.8*nrow(df))
+#head(spl)
+```
+
+```{r}
+# Now lets split our dataset into train and test:
+train_df = df[spl,]
+test_df = df[-spl,]
+ncol(train_df)
+ncol(test_df)
+```
+
+### 3.1 Simple Regression Model
+
+#### 3.1.1 Subset Selection
+
+```{r warning=FALSE}
+library(leaps)
+library(ISLR)
+fullfit=regsubsets(AvgSalary ~., train_df, nvmax = 10, really.big=T)
+selsummary <- summary(fullfit)
+names(selsummary)
+```
+
+```{r}
+selsummary$rsq
+```
+
+```{r}
+#R-Square Plot
+rquare <- as.data.frame(selsummary$rsq) 
+names(rquare)<-"R2"
+# Plot
+ggplot(rquare, aes(x = c(1:nrow(rquare)), y = R2)) +
+  geom_point()+
+  labs(x="Number of Model Variables")+
+  labs(title="R2 increases with Variables")
+```
+
+```{r}
+#Adj R-Square Plot
+adjrsquare <- as.data.frame(selsummary$adjr2)
+names(adjrsquare)<-"adj_R2"
+ggplot(adjrsquare, aes(x = c(1:nrow(adjrsquare)), y = adj_R2)) +
+  geom_point()+
+  labs(x="Number of Model Variables")+
+  labs(title="Adjusted R2")
+
+which(max(adjrsquare)==adjrsquare)
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(selsummary$rss,xlab="Number of Variables",ylab="RSS",type="l")
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(selsummary$cp,xlab="Number of Variables",ylab="Cp",type='l')
+points(10,selsummary$cp[10],col="red",cex=2,pch=20)
+which.min(selsummary$cp)
+```
+
+```{r}
+# Using BIC (Bayesian information criterion): Choose the minimum
+which.min(selsummary$bic)
+plot(selsummary$bic,xlab="Number of Variables",ylab="BIC",type='l')
+points(6,selsummary$bic[6],col="red",cex=2,pch=20)
+```
+
+```{r}
+plot(fullfit,scale="r2")
+plot(fullfit,scale="adjr2")
+plot(fullfit,scale="Cp")
+plot(fullfit,scale="bic")
+coef(fullfit,10)
+```
+
+```{r}
+coef(fullfit,11)
+fullsum <- summary(fullfit)
+min(fullsum$cp)
+```
+
+#### 3.1.2 Model Building
+
+```{r}
+fit <- lm(AvgSalary ~SectorBiotechPharmaceuticals+SectorInformationTechnology+SectorHealthCare+ CA + IL+ PA + Contract +TX+NJ+NY , data=train_df)
+summary(fit)
+```
+
+#### 3.1.2 Model Building
+
+```{r warning=FALSE}
+mean_train = mean(train_df$AvgSalary)
+test_pred = predict(fit, newdata = test_df)
+SSE_lin = sum((test_df$AvgSalary  - test_pred)^2)
+SST_lin = sum((test_df$AvgSalary - mean_train)^2)
+R_square= 1 - SSE_lin/SST_lin
+print(paste("Linear_Regression has a R-squred of", round(R_square,4)))
+```
+
+### 3.2 Regression Tree Model
+
+```{r}
+treea <- rpart (AvgSalary ~ .-Unknown, data= train_df, method='anova', minbucket=100, cp=0.00001)
+prp(treea,digits = -5)
+```
+
+```{r}
+printcp(treea)
+plotcp(treea)
+```
+
+```{r}
+tree_model <- rpart (AvgSalary ~ ., data= train_df, method='anova', minbucket=100, cp=0.00014061)
+prp(tree_model,digits = -5)
+```
+
+```{r}
+rpart.plot(tree_model,digits=-2)
+```
+
+```{r}
+pred_tree = predict(tree_model, newdata= test_df)
+```
+
+```{r}
+SSE_tree = sum((test_df$AvgSalary - pred_tree)^2)
+SST_tree = sum((test_df$AvgSalary - mean_train)^2)
+OSR_tree = 1 - SSE_tree/SST_tree
+print(paste("Tree Model has a OSR of", round(OSR_tree,3)))
+```
+
+### 3.3 Random Forest Model
+
+```{r}
+#there's column name that will cause trouble in xgboost model
+
+
+library(randomForest)
+rf_ini = randomForest(AvgSalary~., 
+                      data=train_df, 
+                      ntree=100,
+                      nodesize=50,
+                      mtry=4)
+```
+
+```{r}
+varImpPlot(rf_ini)
+```
+
+```{r}
+plot(rf_ini)
+```
+
+```{r}
+x = train_df[,-1]
+y = train_df$AvgSalary
+
+sqrt(ncol(x))
+
+set.seed(123, sample.kind="Rejection")
+tuneRF(x, y, mtryStart = 8, stepFactor = 2, ntreeTry=100, nodesize=20, improve=0.01)
+```
+
+```{r}
+set.seed(123, sample.kind="Rejection")
+rf_model = randomForest(AvgSalary~., 
+                      data=train_df, 
+                      ntree=100,
+                      nodesize=50,
+                      mtry=8)
+```
+
+```{r}
+pred_random = predict(rf_model, newdata= test_df)
+# head(test_df)%>%relocate(pred_random)
+SSE_random = sum((test_df$AvgSalary - pred_random )^2)
+SST_random  = sum((test_df$AvgSalary - mean_train)^2)
+OSR_random  = 1 - SSE_random/SST_random
+print(paste("Tree Model has a OSR of", round(OSR_random ,3)))
+```
+
+### 3.4 XGBoosting
+
+```{r}
+library(caret)
+set.seed(123, sample.kind = "Rejection")
+xgb_model <- train(AvgSalary~., data = train_df, method = 'xgbTree',verbosity = 0) # Execution might take a very long time
+```
+
+```{r}
+pred_xgb = predict(xgb_model, newdata= test_df)
+#head(test_df)%>%relocate(pred_xgb)
+SSE_xgb = sum((test_df$AvgSalary - pred_xgb)^2)
+SST_xgb  = sum((test_df$AvgSalary - mean_train)^2)
+OSR_xgb  = 1 - SSE_xgb/SST_xgb
+print(paste("Tree Model has a OSR of", round(OSR_xgb ,3)))
+```
+
+```{r}
+set.seed(123, sample.kind = "Rejection")
+ctrl <- trainControl(method = "repeatedcv",
+                     repeats = 5) # repeats: Repeat k-fold cross-validation.
+mod_xgb <- train(AvgSalary ~ ., data = train_df,
+             method = "xgbTree",
+             trControl = ctrl,
+             verbosity = 0)
+```
+
+```{r}
+pred_xgb1 = predict(mod_xgb, newdata= test_df)
+#head(test_df)%>%relocate(pred_xgb)
+SSE_xgb1 = sum((test_df$AvgSalary - test_df$pred_xgb1)^2)
+SST_xgb1  = sum((test_df$AvgSalary - mean_train)^2)
+OSR_xgb1  = 1 - SSE_xgb1/SST_xgb1
+print(paste("Tree Model has a OSR of", round(OSR_xgb1 ,3)))
+```
+
+## 4. Classification Model Building
+
+```{r}
+dfc <- df
+dfc$SalaryOver85k <- ifelse(dfc$AvgSalary>=85,1,0)
+
+```
+
+```{r}
+dfc$AvgSalary <- NULL
+```
+
+```{r}
+set.seed(123, sample.kind = "Rejection")
+splc = sample(nrow(dfc),0.8*nrow(dfc))
+#head(splc)
+```
+
+```{r}
+# Now lets split our dataset into train and test:
+train_dfc = dfc[splc,]
+test_dfc = dfc[-splc,]
+ncol(train_dfc)
+ncol(test_dfc)
+```
+
+### 4.1 Naive Prediction
+
+```{r}
+sum(dfc$SalaryOver85k == 0)/nrow(dfc)
+
+```
+
+-   Since 71% of SalaryOver85k is 0, we can do navie prediction.
+
+```{r}
+library(caret)
+test_dfc$navie_pre <- 0 
+confusion_navie <- confusionMatrix(as.factor(test_dfc$navie_pre),as.factor(test_dfc$SalaryOver85k))
+confusion_navie
+```
+
+```{r}
+Naive_accuracy <- confusion_navie$overall['Accuracy']
+Naive_accuracy 
+```
+
+### 4.2 Logistic Prediction
+
+```{r warning=FALSE}
+log_model = glm(SalaryOver85k ~ .- Unknown, data=train_dfc, family="binomial")
+summary(log_model)
+```
+
+```{r}
+test_dfc$log_pre = predict(log_model,test_dfc, type="response")
+```
+
+```{r}
+threshold = 0.5
+test_dfc$log_pre = ifelse(test_dfc$log_pre >= threshold, 1, 0)
+```
+
+```{r}
+confusion_log <- confusionMatrix(as.factor(test_dfc$log_pre),as.factor(test_dfc$SalaryOver85k))
+confusion_log
+log_accuracy <- confusion_log$overall['Accuracy']
+log_accuracy 
+```
+
+```{r}
+library(ROCR)
+roc.pred = prediction(as.numeric(test_dfc$log_pre),as.numeric(test_dfc$SalaryOver85k))
+# ... which we can then use to actually create the ROC curve
+# with the function "performance" (note: we need to store this
+# so that we can then draw the curve):
+perf = performance(roc.pred, "tpr", "fpr")
+```
+
+```{r}
+plot(perf,                      # the data
+     main = "ROC Curve",        # the chart's title
+     xlab = "1 - Specificity",  # the name of the x-axis
+     ylab = "Sensitivity",      # the name of the y-axis
+     colorize=TRUE)             # add color to curve depending on threshold prob.
+
+# ... and add the diagonal corresponding to the Random Assignment
+# benchmark model: 
+
+abline(0,1)
+```
+
+### 4.3 Classification Tree Prediction
+
+```{r}
+set.seed(123, sample.kind = "Rejection")
+base.ct <- rpart(SalaryOver85k ~ ., data = train_dfc, method = "class", minbucket = 50, cp=0.001)
+plotcp(base.ct)
+prp(base.ct, type = 1, extra = 1, under = TRUE, split.font = 1, varlen = -10)
+```
+
+```{r}
+#tuned tree
+set.seed(123, sample.kind = "Rejection")
+tune.ct <- rpart(SalaryOver85k ~ ., data = train_dfc, method = "class", minbucket = 20, cp=0.013)
+prp(tune.ct, type = 1, extra = 1, under = TRUE, split.font = 1, varlen = -10)
+```
+
+```{r}
+test_dfc$ct_pre = predict(tune.ct, test_dfc, type="prob")
+test_dfc <- test_dfc[,!(names(test_dfc) %in% c("log_pre"))]
+```
+
+```{r}
+threshold = 0.5
+test_dfc$ct_pre = ifelse(test_dfc$ct_pre >= threshold, 1, 0)
+```
+
+```{r}
+confusion_ct <- confusionMatrix(as.factor(test_dfc$ct_pre[,2]), as.factor(test_dfc$SalaryOver85k))
+confusion_ct
+ct_accuracy <- confusion_ct$overall['Accuracy']
+ct_accuracy 
+```
+
+```{r}
+library(ROCR)
+roc.predct = prediction(as.numeric(test_dfc$ct_pre[,2]), as.numeric(test_dfc$SalaryOver85k))
+# ... which we can then use to actually create the ROC curve
+# with the function "performance" (note: we need to store this
+# so that we can then draw the curve):
+perf = performance(roc.predct, "tpr", "fpr")
+```
+
+```{r}
+plot(perf,                      # the data
+     main = "ROC Curve",        # the chart's title
+     xlab = "1 - Specificity",  # the name of the x-axis
+     ylab = "Sensitivity",      # the name of the y-axis
+     colorize=TRUE)             # add color to curve depending on threshold prob.
+
+# ... and add the diagonal corresponding to the Random Assignment
+# benchmark model: 
+
+abline(0,1)
+```
+
+### 4.4 Random Forest- Classification
+
+```{r warning=FALSE}
+library(randomForest) 
+set.seed(123, sample.kind = "Rejection") 
+baserf = randomForest(SalaryOver85k~., data=train_dfc, ntree=300, nodesize=20, mtry=4)
+```
+
+```{r}
+x = train_dfc[,-1] 
+y = train_dfc$SalaryOver85k 
+set.seed(123, sample.kind="Rejection") 
+tuneRF(x, y, mtryStart = 4, stepFactor = 2, ntreeTry=300, nodesize=20, improve=0.01)
+```
+
+```{r}
+rffinal = randomForest(SalaryOver85k~., data = train_dfc, ntree=300, nodesize=20, mtry=16) 
+varImpPlot(rffinal)
+```
+
+```{r}
+par(mfrow=c(3,1)) 
+partialPlot(rffinal, test_dfc , CA ) 
+partialPlot(rffinal, test_dfc , Founded) 
+partialPlot(rffinal, test_dfc , Star)
+```
+
+```{r}
+test_dfc$rf_pre = predict(rffinal, test_dfc,type ="response")
+threshold = 0.5
+test_dfc$rf_pre = ifelse(test_dfc$rf_pre >= threshold, 1, 0)
+confusionMatrix(as.factor(test_dfc$rf_pre), as.factor(test_dfc$SalaryOver85k))
+```
+
+## 5. Text Mining of Job Description
+
+```{r}
+nrow(salary)
+new_str  <- gsub('[^[:alnum:] ]','',salary$Job.Description)
+Job_description <- data.frame(line = 1:4092,as.character(new_str))
+```
+
+```{r}
+Job_description$text <- Job_description$as.character.new_str.
+Job_description$as.character.new_str2. <- NULL
+Job_description <- Job_description %>% unnest_tokens(word, text)
+Job_description$document <- 'job description'
+```
+
+```{r}
+Job_description <- Job_description %>% anti_join(stop_words, by = c(word = "word"))
+
+```
+
+```{r}
+word_counts <- Job_description %>%
+  count(word, sort = TRUE) 
+```
+
+```{r}
+library(wordcloud2)
+
+wordcloud2(word_counts, size=1.6,color='random-light', backgroundColor="black")
+
+```
+
+
+## 6. Conclusion
+
+-   Location is the key for salary, California is the finest option if you're looking for a high-paying career due to its advantageous location. CA has a relatively high living standard and the wage there has to compensate the expense. 
+
+-   Salary is influenced by the quality of the organization; a reputable company will have a high rating. A high rating organization will not only provide high salary, but also health insurance, 401k and all other company benefits.
+
+-   Some sectors, such as Biotech Pharmaceuticals, Information Technology, and Healthcare, offer significant salaries. To get into those sectors, future analysts can start with related projects or internships in those fields and write them in resume, it will stand out among all other applicants. 
+
+-   Recruiters value management abilities, technical skills, and teamwork. It's really comprehensive, having experiences and story telling on those skills will impress recruiters. 
+
+
+
