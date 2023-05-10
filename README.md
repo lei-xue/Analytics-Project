@@ -19,7 +19,7 @@ I'm a data-savvy storyteller with expertise in Python, R, and SQL. I have previo
 
 # 📚 Projects
 
-## R-Project//Craigslist Car Price Prediction | [Link to the project]((https://sherrylovebobatea.github.io/Car-Price-Analytics/))
+## R-Project//Craigslist Car Price Prediction | [Link to the project](https://sherrylovebobatea.github.io/Car-Price-Analytics/)
 _Date: Oct 2022 ‑ Dec 2022_
 
 - Analyzed 420,000 car sales listings with R programming.
