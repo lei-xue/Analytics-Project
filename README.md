@@ -45,6 +45,11 @@ _Date: Mar 2023 ‑ Mar 2023_
 
 ## Python-Project//A/B Testing on Email Marketing Campaign | [Link to the project](#)
 
+## PowerBI-Project 
+
+## Tableau-Project
+
+
 # 💼 Professional Experience
 
 ## Market Analyst | Yangzhou Yaxing Motor Coach Co., Ltd., China
