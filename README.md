@@ -19,7 +19,7 @@ I'm a data-savvy storyteller with expertise in Python, R, and SQL. I have previo
 
 # 📚 Projects
 
-## R-Project/Craigslist Car Price Prediction | [Link to the project](#)
+## R-Project//Craigslist Car Price Prediction | [Link to the project](#)
 _Date: Oct 2022 ‑ Dec 2022_
 
 - Analyzed 420,000 car sales listings with R programming.
@@ -27,7 +27,10 @@ _Date: Oct 2022 ‑ Dec 2022_
 - Constructed and optimized machine learning models for price prediction with an R‑squared value of 0.86.
 - Performed text mining and sentiment analysis on car descriptions.
 
-## Python-Project/A/B Testing on Email Marketing Campaign | [Link to the project](#)
+## R-Project//A/B Testing on Email Marketing Campaign | [Link to the project](#)
+
+
+## Python-Project//A/B Testing on Email Marketing Campaign | [Link to the project](#)
 _Date: Mar 2023 ‑ Mar 2023_
 
 - Carried out email multi-arm experiment on 480,000 users divided into 24 treatments groups.
@@ -36,6 +39,11 @@ _Date: Mar 2023 ‑ Mar 2023_
 - Undertook one-sample A/B testing, revealing a connection between email campaign strategy and conversion rates.
 - Formulated a 55% email frequency increase strategy for improving open rates.
 
+## Python-Project//A/B Testing on Email Marketing Campaign | [Link to the project](#)
+
+
+
+## Python-Project//A/B Testing on Email Marketing Campaign | [Link to the project](#)
 
 # 💼 Professional Experience
 
