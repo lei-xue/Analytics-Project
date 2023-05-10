@@ -14,6 +14,27 @@ Master of Management Information Systems | Business Analytics
 ## 📊 About Me
 I'm a data-savvy storyteller with expertise in Python, R, and SQL. I have previous experience in data visualization, machine learning, and business analytics. I'm currently seeking an intern position in data analytics.
 
+
+# 📚 Projects
+
+## Craigslist Car Price Prediction | [Link to the project](#)
+_Date: Oct 2022 ‑ Dec 2022_
+
+- Analyzed 420,000 car sales listings with R programming.
+- Developed data visualizations using ggplot and Google API.
+- Constructed and optimized machine learning models for price prediction with an R‑squared value of 0.86.
+- Performed text mining and sentiment analysis on car descriptions.
+
+## A/B Testing on Email Marketing Campaign | [Link to the project](#)
+_Date: Mar 2023 ‑ Mar 2023_
+
+- Carried out email multi-arm experiment on 480,000 users divided into 24 treatments groups.
+- Calculated open rates in treatment groups using Seaborn, identifying effective emails and optimal user segments.
+- Built a data frame including link, activity, and conversion rate for the 24 treatment groups.
+- Undertook one-sample A/B testing, revealing a connection between email campaign strategy and conversion rates.
+- Formulated a 55% email frequency increase strategy for improving open rates.
+
+
 # 💼 Professional Experience
 
 ## Market Analyst | Yangzhou Yaxing Motor Coach Co., Ltd., China
@@ -36,24 +57,6 @@ _Date: Aug 2020 ‑ Oct 2020_
 - Google Analytics Individual Qualification [Google](https://skillshop.exceedlms.com/student/award/ffbd1dVgoQE8jeoA9iRmnrCN)
 - Microsoft certified: Power BI Data Analyst Associate [Microsoft](https://www.credly.com/badges/d19348cf-8afd-4ff0-a3b3-3ee4e6d0c975/linked_in_profile)
 
-# 📚 Projects
-
-## Craigslist Car Price Prediction | [Link to the project](#)
-_Date: Oct 2022 ‑ Dec 2022_
-
-- Analyzed 420,000 car sales listings with R programming.
-- Developed data visualizations using ggplot and Google API.
-- Constructed and optimized machine learning models for price prediction with an R‑squared value of 0.86.
-- Performed text mining and sentiment analysis on car descriptions.
-
-## A/B Testing on Email Marketing Campaign | [Link to the project](#)
-_Date: Mar 2023 ‑ Mar 2023_
-
-- Carried out email multi-arm experiment on 480,000 users divided into 24 treatments groups.
-- Calculated open rates in treatment groups using Seaborn, identifying effective emails and optimal user segments.
-- Built a data frame including link, activity, and conversion rate for the 24 treatment groups.
-- Undertook one-sample A/B testing, revealing a connection between email campaign strategy and conversion rates.
-- Formulated a 55% email frequency increase strategy for improving open rates.
 
 # 👩‍💻 Skills
 
