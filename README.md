@@ -2,9 +2,11 @@
 👋 Hello! I'm Lei (Sherry) Xue.
 
 # 🎓 Education
+
 ### Georgia Institute of Technology
 Master of Science in Computer Science - online
 (_Aug 2023 - May 2025_)
+
 ### University of Pittsburgh (GPA:3.69)                                                 
 Master of Management Information Systems | Business Analytics 
 (_Aug 2021 - May 2023_)
