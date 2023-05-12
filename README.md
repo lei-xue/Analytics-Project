@@ -80,7 +80,7 @@ _Date: Aug 2020 ‑ Oct 2020_
 - Soft skills: Time Management, Teamwork, Problem solving, Documentation, Engaging Presentation
 
 ## 📫 Contact Me
-You can contact me at lex5@pitt.edu or connect with me on [LinkedIn](www.linkedin.com/in/lei-sherry-xue) or [GitHub](https://github.com/sherrylovebobatea/Analytics-Project).
+You can contact me at lex5@pitt.edu or connect with me on [LinkedIn](https://www.linkedin.com/in/lei-sherry-xue) or [GitHub](https://github.com/sherrylovebobatea/Analytics-Project).
 
 ## 🚀 Open to Opportunities
 I'm open to new opportunities and excited to tackle challenging problems in data analytics!
