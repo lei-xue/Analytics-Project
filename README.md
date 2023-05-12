@@ -27,7 +27,7 @@ _Date: Oct 2022 ‑ Dec 2022_
 - Constructed and optimized machine learning models for price prediction with an R‑squared value of 0.86.
 - Performed text mining and sentiment analysis on car descriptions.
 
-## R-Project//A/B Testing on Email Marketing Campaign | [Link to the project](#)
+## R-Project//Data-analyst Salary analysis | [Link to the project](https://sherrylovebobatea.github.io/Data-Analyst/)
 
 
 ## Python-Project//A/B Testing on Email Marketing Campaign | [Link to the project](#)
