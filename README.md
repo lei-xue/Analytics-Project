@@ -39,7 +39,7 @@ _Date: Mar 2023 ‑ Mar 2023_
 - Undertook one-sample A/B testing, revealing a connection between email campaign strategy and conversion rates.
 - Formulated a 55% email frequency increase strategy for improving open rates.
 
-## Python-Project//A/B Testing on Email Marketing Campaign | [Link to the project](#)
+## Python-Project//LGBT mental health analysis | [Link to the project](https://github.com/sherrylovebobatea/Analytics-Project/blob/main/1Python/InfluenceOnLGBT_April2022.ipynb)
 
 
 
