@@ -14,7 +14,7 @@ Master of Management Information Systems | Business Analytics
 
 
 ## 📊 About Me
-I'm a data-savvy storyteller with expertise in Python, R, and SQL. I have previous experience in data visualization, machine learning, and business analytics. I'm currently seeking an intern position in data analytics.
+I'm a data-savvy storyteller with expertise in Python, R, and SQL. I have previous experience in data visualization, machine learning, and business analytics. I'm currently seeking job position in data analytics.
 
 
 # 📚 Projects
