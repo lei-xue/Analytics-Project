@@ -68,7 +68,7 @@ _Date: Aug 2020 ‑ Oct 2020_
 
 # 🏆 Achievements & Certifications
 
-- Winner of TL Saaty Decision-Making Hackathon Competition
+- Winner of TL Saaty Decision-Making Hackathon Competition [Link](https://www.linkedin.com/feed/update/urn:li:activity:7046451605616943104/)
 - Google Analytics Individual Qualification [Google](https://skillshop.exceedlms.com/student/award/ffbd1dVgoQE8jeoA9iRmnrCN)
 - Microsoft certified: **Power BI** Data Analyst Associate [Microsoft](https://www.credly.com/badges/d19348cf-8afd-4ff0-a3b3-3ee4e6d0c975/linked_in_profile)
 
