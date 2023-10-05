@@ -55,9 +55,7 @@ _Date: Mar 2023 ‑ Mar 2023_
 ## Market Analyst | Yangzhou Yaxing Motor Coach Co., Ltd., China
 _Date: Jul 2019 ‑ Jul 2020_
 
-- Explored China Customs data using Excel and Python, conducted market research, and assisted in product configuration and marketing strategies.
-- Supported production, testing, and shipment tracking for 300+ units.
-- Conducted customer segmentation with Scikit‑learn, boosting conversion rates by 10%.
+
 
 ## Business Analyst Intern | InterContinental Hotel‑Wuxi, China
 _Date: Aug 2020 ‑ Oct 2020_
