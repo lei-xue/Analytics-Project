@@ -52,7 +52,7 @@ _Date: Mar 2023 ‑ Mar 2023_
 
 # 💼 Professional Experience
 
-## Market Analyst | Yangzhou Yaxing Motor Coach Co., Ltd., China
+## Market Analyst | AsiaStar Motor Coach Co., Ltd., China
 _Date: Jul 2019 ‑ Jul 2020_
 
 
